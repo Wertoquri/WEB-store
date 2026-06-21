@@ -31,7 +31,10 @@ if (isProduction) {
 }
 
 // Security middleware
-app.use(helmet()); // Set various security headers
+app.use(helmet({
+  crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' },
+  contentSecurityPolicy: false,
+})); // CSP is configured below with the external services the storefront uses.
 app.use(securityHeaders); // Custom security headers
 
 // CORS configuration
