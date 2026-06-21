@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import helmet from 'helmet';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import authRoutes from './routes/auth.routes.js';
@@ -30,6 +31,10 @@ if (isProduction) {
 }
 
 // Security middleware
+app.use(helmet({
+  crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' },
+  contentSecurityPolicy: false,
+}));
 app.use(securityHeaders); // Custom security headers
 
 // CORS configuration
@@ -42,7 +47,8 @@ const allowedOrigins = [
   'http://127.0.0.1:5174',
   'http://127.0.0.1:3000',
   'http://127.0.0.1:3001',
-  process.env.CLIENT_URL
+  process.env.CLIENT_URL,
+  process.env.RENDER_EXTERNAL_URL
 ].filter(Boolean);
 
 app.use(cors({
