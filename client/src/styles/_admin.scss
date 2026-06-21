@@ -1,0 +1,508 @@
+@use 'variables' as *;
+
+.admin {
+  @include container;
+  padding: 2rem 1rem;
+
+  @media (min-width: 640px) {
+    padding: 2rem 1.5rem;
+  }
+
+  @media (min-width: 1024px) {
+    padding: 2rem 2rem;
+  }
+}
+
+.admin-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.admin-title {
+  h1 {
+    font-size: 1.875rem;
+    font-weight: 800;
+    color: $gray-900;
+    margin-bottom: 0.25rem;
+  }
+
+  p {
+    font-size: 0.875rem;
+    color: $gray-500;
+  }
+}
+
+.admin-add-btn {
+  @include btn-primary;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+
+  svg {
+    width: 1.125rem;
+    height: 1.125rem;
+  }
+}
+
+// Tabs
+.admin-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+  border-bottom: 2px solid $gray-100;
+  padding-bottom: 0;
+}
+
+.admin-tab {
+  padding: 0.75rem 1.5rem;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: $gray-500;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  cursor: pointer;
+  transition: $transition;
+
+  &:hover {
+    color: $gray-700;
+  }
+
+  &.active {
+    color: $primary-600;
+    border-bottom-color: $primary-600;
+    font-weight: 600;
+  }
+}
+
+// Modal
+.admin-modal {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  padding: 1rem;
+  animation: fadeIn 0.2s ease;
+}
+
+.admin-modal-content {
+  background-color: $white;
+  border-radius: $radius-xl;
+  box-shadow: $shadow-2xl;
+  width: 100%;
+  max-width: 36rem;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: scaleIn 0.3s ease;
+}
+
+.admin-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid $gray-100;
+
+  h2 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: $gray-900;
+  }
+
+  button {
+    padding: 0.375rem;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: $gray-400;
+    transition: $transition;
+    border-radius: $radius-md;
+
+    &:hover {
+      color: $gray-600;
+      background-color: $gray-100;
+    }
+
+    svg {
+      width: 1.25rem;
+      height: 1.25rem;
+    }
+  }
+}
+
+.admin-modal-body {
+  padding: 1.5rem;
+}
+
+// Form
+.admin-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.admin-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+
+  label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: $gray-700;
+  }
+
+  input, select, textarea {
+    @include input-field;
+  }
+
+  &.grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+}
+
+.admin-form-image-preview {
+  margin-top: 0.75rem;
+  max-width: 100%;
+  max-height: 12rem;
+  object-fit: cover;
+  border-radius: $radius-lg;
+  border: 1px solid $gray-200;
+}
+
+.admin-form-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+
+  .primary {
+    @include btn-primary;
+    flex: 1;
+  }
+
+  .secondary {
+    @include btn-secondary;
+  }
+}
+
+// Table
+.admin-table {
+  overflow-x: auto;
+  background-color: $white;
+  border-radius: $radius-xl;
+  box-shadow: $shadow-sm;
+  border: 1px solid $gray-100;
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  th {
+    padding: 0.875rem 1rem;
+    text-align: left;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: $gray-500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid $gray-100;
+    background-color: $gray-50;
+  }
+
+  td {
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+    border-bottom: 1px solid $gray-50;
+    vertical-align: middle;
+  }
+
+  tbody tr {
+    transition: $transition;
+
+    &:hover {
+      background-color: $gray-50;
+    }
+  }
+}
+
+.admin-table-product {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.admin-table-product-image {
+  width: 3rem;
+  height: 3rem;
+  object-fit: cover;
+  border-radius: $radius-md;
+  flex-shrink: 0;
+}
+
+.admin-table-product-name {
+  font-weight: 500;
+  color: $gray-900;
+  max-width: 14rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.admin-table-category {
+  color: $gray-500;
+}
+
+.admin-table-price {
+  font-weight: 600;
+  color: $gray-900;
+}
+
+.admin-table-stock {
+  font-weight: 500;
+
+  &.high {
+    color: $green-600;
+  }
+
+  &.low {
+    color: $orange-500;
+  }
+
+  &.out {
+    color: $red-600;
+  }
+}
+
+.admin-table-rating {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: $yellow-400;
+
+  svg {
+    width: 1rem;
+    height: 1rem;
+  }
+
+  span {
+    color: $gray-600;
+    font-size: 0.8125rem;
+  }
+}
+
+.admin-table-actions {
+  display: flex;
+  gap: 0.5rem;
+
+  button {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    border-radius: $radius-md;
+    border: 1px solid $gray-200;
+    background: $white;
+    color: $gray-600;
+    cursor: pointer;
+    transition: $transition;
+
+    &:hover {
+      background-color: $gray-50;
+      border-color: $gray-300;
+    }
+
+    &:last-child {
+      color: $red-600;
+      border-color: $red-200;
+
+      &:hover {
+        background-color: $red-50;
+        border-color: $red-300;
+      }
+    }
+  }
+}
+
+// Orders section
+.admin-orders {
+  select.orders-status {
+    padding: 0.25rem 0.5rem;
+    border-radius: $radius-full;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: $transition;
+
+    &.pending {
+      background-color: $yellow-100;
+      color: $yellow-700;
+    }
+
+    &.processing {
+      background-color: $blue-100;
+      color: $blue-700;
+    }
+
+    &.shipped {
+      background-color: $purple-100;
+      color: $purple-700;
+    }
+
+    &.delivered {
+      background-color: $green-100;
+      color: $green-700;
+    }
+
+    &.cancelled {
+      background-color: $red-100;
+      color: $red-700;
+    }
+  }
+
+  .orders-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 3rem;
+    color: $gray-500;
+
+    svg {
+      display: block;
+      width: 4rem;
+      height: 4rem;
+      margin: 0 auto 1rem;
+    }
+  }
+}
+
+// Order details modal
+.order-details-info {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+  padding: 1rem;
+  background-color: $gray-50;
+  border-radius: $radius-lg;
+}
+
+.order-details-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.order-details-label {
+  font-size: 0.75rem;
+  color: $gray-500;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.order-details-total {
+  grid-column: 1 / -1;
+  padding-top: 0.75rem;
+  border-top: 1px solid $gray-200;
+  display: flex;
+  justify-content: space-between;
+  font-size: 1.125rem;
+  font-weight: 800;
+  color: $gray-900;
+}
+
+.order-details-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: $gray-900;
+  margin-bottom: 0.75rem;
+}
+
+.order-details-items {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.orders-item {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.5rem;
+  background-color: $gray-50;
+  border-radius: $radius-md;
+}
+
+.orders-item-image {
+  width: 2.5rem;
+  height: 2.5rem;
+  object-fit: cover;
+  border-radius: $radius-sm;
+  flex-shrink: 0;
+}
+
+.orders-item-info {
+  flex: 1;
+  min-width: 0;
+
+  a {
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: $gray-900;
+
+    &:hover {
+      color: $primary-600;
+    }
+  }
+
+  p {
+    font-size: 0.75rem;
+    color: $gray-500;
+  }
+}
+
+.order-item-name {
+  font-weight: 500;
+  color: $gray-900;
+}
+
+.orders-item-price {
+  text-align: right;
+  flex-shrink: 0;
+
+  .total {
+    font-weight: 700;
+    color: $gray-900;
+    font-size: 0.875rem;
+  }
+
+  .unit {
+    font-size: 0.6875rem;
+    color: $gray-400;
+  }
+}
+
+.order-details-actions {
+  display: flex;
+  gap: 0.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid $gray-100;
+
+  button {
+    @include btn-secondary;
+    font-size: 0.8125rem;
+  }
+}

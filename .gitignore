@@ -1,0 +1,17 @@
+node_modules/
+dist/
+.env
+.env.local
+*.log
+.DS_Store
+coverage/
+.vscode/
+.idea/
+Redesign/
+inst.md
+IMPROVEMENT_PLAN.md
+server/uploads/products/*
+server/uploads/reviews/*
+!server/uploads/products/.gitkeep
+!server/uploads/reviews/.gitkeep
+server/prisma/dev.db*

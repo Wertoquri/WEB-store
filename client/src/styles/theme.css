@@ -1,0 +1,90 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@400;500;600;700;800&display=swap');
+
+:root {
+  --font-size: 16px;
+  --bg-layer: #f4ede6;
+  --surface: rgba(255, 255, 255, 0.72);
+  --surface-elevated: rgba(255, 248, 242, 0.94);
+  --sand: #efe4da;
+  --ink-strong: #121826;
+  --ink-soft: #4a5568;
+  --ink-muted: #7f8aa3;
+  --brand: #ff6b4a;
+  --brand-soft: rgba(255, 107, 74, 0.18);
+  --accent: #ff8e53;
+  --mint: #7ee7cf;
+  --gold: #f6c76a;
+  --line-soft: rgba(18, 24, 38, 0.1);
+  --shadow-soft: 0 24px 54px -34px rgba(19, 28, 45, 0.28);
+  --background: 28 42% 95%;
+  --foreground: 222 35% 12%;
+  --card: 0 0% 100%;
+  --card-foreground: 222 35% 12%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 222 35% 12%;
+  --primary: 14 100% 64%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 32 37% 90%;
+  --secondary-foreground: 222 35% 12%;
+  --muted: 30 28% 91%;
+  --muted-foreground: 218 16% 44%;
+  --accent-foreground: 222 35% 12%;
+  --destructive: 350 82% 46%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 30 16% 83%;
+  --input: 30 16% 83%;
+  --ring: 14 100% 64%;
+  --radius: 0.5rem;
+}
+
+@layer base {
+  html {
+    font-size: var(--font-size);
+    scroll-behavior: smooth;
+  }
+
+  body {
+    min-height: 100vh;
+    font-family: 'Manrope', 'Segoe UI', sans-serif;
+    color: var(--ink-strong);
+    background:
+      radial-gradient(circle at top left, rgba(126, 231, 207, 0.2), transparent 28%),
+      radial-gradient(circle at top right, rgba(255, 107, 74, 0.16), transparent 24%),
+      linear-gradient(180deg, #f8f0ea 0%, #f4ede6 48%, #efe6df 100%);
+  }
+
+  ::selection {
+    background: rgba(255, 107, 74, 0.24);
+    color: var(--ink-strong);
+  }
+
+  a,
+  button,
+  input,
+  select,
+  textarea {
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+@layer utilities {
+  .font-display {
+    font-family: 'Sora', 'Manrope', sans-serif;
+  }
+
+  .store-page {
+    position: relative;
+  }
+
+  .store-page::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-image:
+      linear-gradient(rgba(255, 255, 255, 0.18) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.18) 1px, transparent 1px);
+    background-size: 72px 72px;
+    mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.35), transparent 70%);
+  }
+}

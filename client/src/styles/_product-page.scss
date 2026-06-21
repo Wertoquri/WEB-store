@@ -1,0 +1,1031 @@
+@use 'variables' as *;
+
+.product-page {
+  @include container;
+  padding: 2rem 1rem;
+
+  @media (min-width: 640px) {
+    padding: 2rem 1.5rem;
+  }
+
+  @media (min-width: 1024px) {
+    padding: 2rem 2rem;
+  }
+
+  &-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: $gray-500;
+    margin-bottom: 1.5rem;
+
+    a {
+      color: $gray-500;
+      text-decoration: none;
+
+      &:hover {
+        color: $primary-600;
+      }
+    }
+
+    span {
+      color: $gray-900;
+    }
+  }
+
+  &-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2rem;
+
+    @media (min-width: 1024px) {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  &-image {
+    @include card;
+    padding: 0;
+    overflow: hidden;
+
+    &-wrapper {
+      aspect-ratio: 1 / 1;
+      background-color: $gray-50;
+      cursor: zoom-in;
+      position: relative;
+    }
+
+    &-main {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.3s ease;
+      display: block;
+
+      &.zoomed {
+        transform: scale(1.5);
+      }
+    }
+  }
+
+  // Thumbnails
+  &-thumbnails {
+    display: flex;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    overflow-x: auto;
+  }
+
+  &-thumbnail {
+    width: 4rem;
+    height: 4rem;
+    border-radius: $radius-md;
+    overflow: hidden;
+    border: 2px solid transparent;
+    flex-shrink: 0;
+    cursor: pointer;
+    transition: $transition;
+    position: relative;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    &:hover {
+      border-color: $gray-300;
+    }
+
+    &.active {
+      border-color: $primary-600;
+    }
+
+    &-active {
+      position: absolute;
+      inset: 0;
+      background: rgba($primary-600, 0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+  }
+
+  // Color Selection
+  &-colors {
+    margin-bottom: 1.5rem;
+
+    h3 {
+      font-weight: 600;
+      color: $gray-900;
+      margin-bottom: 0.75rem;
+      font-size: 0.9375rem;
+    }
+  }
+
+  &-colors-list {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  &-color-swatch {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 50%;
+    border: 2px solid $gray-200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: $transition;
+    position: relative;
+    overflow: hidden;
+
+    &:hover {
+      border-color: $gray-400;
+      transform: scale(1.1);
+    }
+
+    &.active {
+      border-color: $primary-600;
+      box-shadow: 0 0 0 2px $primary-100;
+      transform: scale(1.1);
+    }
+  }
+
+  &-color-dot {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+  }
+
+  &-info {
+    display: flex;
+    flex-direction: column;
+  }
+
+  &-category {
+    color: $primary-600;
+    font-weight: 500;
+    font-size: 0.875rem;
+    margin-bottom: 0.5rem;
+  }
+
+  &-title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: $gray-900;
+    margin-bottom: 0.5rem;
+
+    @media (min-width: 768px) {
+      font-size: 2.25rem;
+    }
+  }
+
+  &-sku {
+    font-size: 0.875rem;
+    color: $gray-500;
+    margin-bottom: 1rem;
+  }
+
+  &-rating {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1.5rem;
+
+    &-stars {
+      display: flex;
+
+      svg {
+        width: 1.25rem;
+        height: 1.25rem;
+
+        &.filled {
+          color: $yellow-400;
+        }
+
+        &.empty {
+          color: $gray-300;
+        }
+      }
+    }
+
+    &-text {
+      color: $gray-600;
+      margin-left: 0.5rem;
+      font-size: 0.875rem;
+    }
+  }
+
+  &-price {
+    margin-bottom: 1.5rem;
+
+    &-main {
+      font-size: 2rem;
+      font-weight: 700;
+      color: $gray-900;
+      margin-bottom: 0.5rem;
+
+      @media (min-width: 768px) {
+        font-size: 2.5rem;
+      }
+    }
+
+    &-stock {
+      font-size: 0.875rem;
+
+      &.available {
+        color: $green-600;
+      }
+
+      &.unavailable {
+        color: $red-600;
+      }
+    }
+  }
+
+  &-description {
+    margin-bottom: 1.5rem;
+
+    h3 {
+      font-weight: 600;
+      color: $gray-900;
+      margin-bottom: 0.5rem;
+    }
+
+    p {
+      color: $gray-600;
+      line-height: 1.6;
+    }
+  }
+
+  &-quantity {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+
+    label {
+      color: $gray-700;
+      font-weight: 500;
+    }
+
+    &-control {
+      display: flex;
+      align-items: center;
+      border: 1px solid $gray-300;
+      border-radius: $radius-lg;
+
+      button {
+        padding: 0.5rem 1rem;
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        transition: $transition;
+
+        &:hover {
+          background-color: $gray-100;
+        }
+
+        &:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+      }
+
+      span {
+        padding: 0.5rem 1.5rem;
+        border-left: 1px solid $gray-300;
+        border-right: 1px solid $gray-300;
+        text-align: center;
+        min-width: 3rem;
+      }
+    }
+  }
+
+  &-actions {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 2rem;
+
+    button {
+      flex: 1;
+      padding: 0.875rem 1.5rem;
+      border-radius: $radius-xl;
+      font-weight: 600;
+      cursor: pointer;
+      transition: $transition;
+      border: none;
+
+      &.primary {
+        @include btn-primary;
+
+        &:disabled {
+          background-color: $gray-200;
+          color: $gray-500;
+          cursor: not-allowed;
+        }
+      }
+
+      &.wishlist {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid $gray-300;
+        background-color: $white;
+        color: $gray-600;
+        width: auto;
+        padding: 0.875rem 1rem;
+
+        &:hover {
+          background-color: $gray-50;
+          color: $red-500;
+          border-color: $red-300;
+        }
+
+        &.active {
+          color: $red-500;
+          border-color: $red-300;
+          background-color: $red-50;
+        }
+
+        svg {
+          width: 1.5rem;
+          height: 1.5rem;
+        }
+      }
+    }
+  }
+
+  &-features {
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: 1px solid $gray-200;
+
+    h3 {
+      font-weight: 600;
+      color: $gray-900;
+      margin-bottom: 1rem;
+    }
+
+    &-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+
+      @media (max-width: 640px) {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    &-item {
+      background-color: $gray-50;
+      padding: 1rem;
+      border-radius: $radius-lg;
+
+      span:first-child {
+        display: block;
+        color: $gray-500;
+        font-size: 0.875rem;
+        margin-bottom: 0.25rem;
+      }
+
+      span:last-child {
+        display: block;
+        font-weight: 500;
+        color: $gray-900;
+      }
+    }
+  }
+
+  // Reviews Section
+  &-reviews-section {
+    margin-top: 3rem;
+    padding-top: 2rem;
+    border-top: 1px solid $gray-200;
+  }
+
+  &-reviews-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+
+    h2 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: $gray-900;
+    }
+
+    .product-reviews-count {
+      color: $gray-500;
+      font-weight: 400;
+      font-size: 1.125rem;
+    }
+
+    .product-reviews-subtitle {
+      font-size: 0.875rem;
+      color: $gray-500;
+      margin-top: 0.25rem;
+    }
+  }
+
+  &-reviews-add-btn {
+    padding: 0.625rem 1.25rem;
+    background-color: $primary-600;
+    color: $white;
+    border: none;
+    border-radius: $radius-lg;
+    font-weight: 500;
+    cursor: pointer;
+    transition: $transition;
+
+    &:hover {
+      background-color: $primary-700;
+    }
+  }
+
+  &-reviews-success {
+    padding: 0.75rem 1rem;
+    background-color: $green-50;
+    color: $green-700;
+    border: 1px solid $green-200;
+    border-radius: $radius-lg;
+    margin-bottom: 1rem;
+  }
+
+  &-reviews-empty {
+    text-align: center;
+    color: $gray-500;
+    padding: 2rem;
+    font-size: 1rem;
+  }
+
+  // Review Form
+  &-review-form {
+    @include card;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+
+    &-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+
+      h3 {
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: $gray-900;
+      }
+
+      button {
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        color: $gray-500;
+        transition: $transition;
+
+        &:hover {
+          color: $gray-900;
+        }
+
+        svg {
+          width: 1.5rem;
+          height: 1.5rem;
+        }
+      }
+    }
+
+    &-rating {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1rem;
+
+      label {
+        font-weight: 500;
+        color: $gray-700;
+      }
+    }
+
+    &-stars {
+      display: flex;
+      gap: 0.25rem;
+
+      button {
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        padding: 0;
+        transition: $transition;
+
+        svg {
+          width: 1.5rem;
+          height: 1.5rem;
+          color: $gray-300;
+        }
+
+        &.active svg {
+          color: $yellow-400;
+        }
+
+        &:hover svg {
+          color: $yellow-300;
+        }
+      }
+    }
+
+    &-group {
+      margin-bottom: 1rem;
+
+      label {
+        display: block;
+        font-weight: 500;
+        color: $gray-700;
+        margin-bottom: 0.5rem;
+      }
+
+      textarea {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid $gray-300;
+        border-radius: $radius-lg;
+        font-size: 1rem;
+        resize: vertical;
+        transition: $transition;
+
+        &:focus {
+          outline: none;
+          border-color: $primary-500;
+          box-shadow: 0 0 0 3px rgba($primary-500, 0.1);
+        }
+      }
+    }
+
+    button[type="submit"] {
+      width: 100%;
+    }
+  }
+
+  // Review List Items
+  &-reviews-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  &-review-item {
+    @include card;
+    padding: 1.25rem;
+
+    &-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.75rem;
+    }
+
+    &-author {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-weight: 500;
+      color: $gray-900;
+    }
+
+    &-avatar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 2rem;
+      height: 2rem;
+      border-radius: 50%;
+      background-color: $primary-100;
+      color: $primary-700;
+      font-weight: 600;
+      font-size: 0.875rem;
+    }
+
+    &-date {
+      font-size: 0.875rem;
+      color: $gray-500;
+    }
+
+    &-rating {
+      display: flex;
+      gap: 0.125rem;
+      margin-bottom: 0.75rem;
+
+      svg {
+        width: 1rem;
+        height: 1rem;
+
+        &.filled {
+          color: $yellow-400;
+        }
+
+        &.empty {
+          color: $gray-300;
+        }
+      }
+    }
+
+    &-comment {
+      color: $gray-700;
+      line-height: 1.6;
+      margin: 0;
+    }
+  }
+}
+
+// ========================================
+// Standalone Reviews Section (not nested)
+// ========================================
+.product-reviews-section {
+  margin-top: 3rem;
+  padding-top: 2rem;
+  border-top: 1px solid $gray-200;
+}
+
+.product-reviews-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+
+  h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: $gray-900;
+  }
+
+  .product-reviews-count {
+    color: $gray-500;
+    font-weight: 400;
+    font-size: 1.125rem;
+  }
+
+  .product-reviews-subtitle {
+    font-size: 0.875rem;
+    color: $gray-500;
+    margin-top: 0.25rem;
+  }
+}
+
+.product-reviews-add-btn {
+  padding: 0.625rem 1.25rem;
+  background-color: $primary-600;
+  color: $white;
+  border: none;
+  border-radius: $radius-lg;
+  font-weight: 500;
+  cursor: pointer;
+  transition: $transition;
+
+  &:hover {
+    background-color: $primary-700;
+  }
+}
+
+.product-reviews-success {
+  padding: 0.75rem 1rem;
+  background-color: $green-50;
+  color: $green-700;
+  border: 1px solid $green-200;
+  border-radius: $radius-lg;
+  margin-bottom: 1rem;
+}
+
+.product-reviews-empty {
+  text-align: center;
+  color: $gray-500;
+  padding: 2rem;
+  font-size: 1rem;
+}
+
+// Review Form
+.product-review-form {
+  @include card;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+
+  &-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+
+    h3 {
+      font-size: 1.125rem;
+      font-weight: 600;
+      color: $gray-900;
+    }
+
+    button {
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      color: $gray-500;
+      transition: $transition;
+      border-radius: $radius-md;
+      padding: 0.25rem;
+
+      &:hover {
+        color: $gray-900;
+        background-color: $gray-100;
+      }
+
+      svg {
+        width: 1.25rem;
+        height: 1.25rem;
+      }
+    }
+  }
+
+  &-rating {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+
+    label {
+      font-weight: 500;
+      color: $gray-700;
+    }
+  }
+
+  &-stars {
+    display: flex;
+    gap: 0.25rem;
+
+    button {
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      padding: 0.25rem;
+      transition: $transition;
+      border-radius: $radius-md;
+
+      svg {
+        width: 1.75rem;
+        height: 1.75rem;
+        color: $gray-300;
+        transition: $transition;
+      }
+
+      &.active svg {
+        color: $yellow-400;
+      }
+
+      &:hover svg {
+        color: $yellow-300;
+      }
+    }
+  }
+
+  &-group {
+    margin-bottom: 1rem;
+
+    label {
+      display: block;
+      font-weight: 500;
+      color: $gray-700;
+      margin-bottom: 0.5rem;
+    }
+
+    textarea {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid $gray-300;
+      border-radius: $radius-lg;
+      font-size: 1rem;
+      resize: vertical;
+      transition: $transition;
+      background-color: $white;
+
+      &:focus {
+        outline: none;
+        border-color: $primary-500;
+        box-shadow: 0 0 0 3px rgba($primary-500, 0.1);
+      }
+    }
+  }
+
+  button[type="submit"] {
+    @include btn-primary;
+    width: 100%;
+  }
+}
+
+// Review List Items
+.product-reviews-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.product-review-item {
+  @include card;
+  padding: 1.25rem;
+
+  &-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+  }
+
+  &-author {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-weight: 500;
+    color: $gray-900;
+  }
+
+  &-avatar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 50%;
+    background: linear-gradient(135deg, $primary-500, $primary-700);
+    color: $white;
+    font-weight: 700;
+    font-size: 0.875rem;
+  }
+
+  &-date {
+    font-size: 0.8125rem;
+    color: $gray-500;
+  }
+
+  &-rating {
+    display: flex;
+    gap: 0.125rem;
+    margin-bottom: 0.5rem;
+
+    svg {
+      width: 1.125rem;
+      height: 1.125rem;
+
+      &.filled {
+        color: $yellow-400;
+      }
+
+      &.empty {
+        color: $gray-300;
+      }
+    }
+  }
+
+  &-comment {
+    color: $gray-700;
+    line-height: 1.6;
+    margin: 0;
+    font-size: 0.9375rem;
+  }
+
+  // Media gallery
+  .review-media-gallery {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-top: 0.75rem;
+  }
+
+  .review-media-item {
+    width: 5rem;
+    height: 5rem;
+    border-radius: $radius-md;
+    overflow: hidden;
+    border: 2px solid $gray-100;
+    transition: $transition;
+
+    &:hover {
+      border-color: $primary-500;
+      transform: scale(1.05);
+    }
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+  }
+
+  .review-video-full {
+    width: 100%;
+    max-height: 16rem;
+    border-radius: $radius-md;
+    margin-top: 0.5rem;
+  }
+}
+
+// Delete review button
+.review-delete-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border: none;
+  background: transparent;
+  color: $gray-400;
+  cursor: pointer;
+  border-radius: $radius-md;
+  transition: $transition;
+
+  &:hover {
+    background-color: $red-50;
+    color: $red-600;
+  }
+}
+
+// Review file upload
+.review-file-upload {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.review-file-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.5rem 1rem;
+  border: 1px dashed $gray-300;
+  border-radius: $radius-lg;
+  cursor: pointer;
+  transition: $transition;
+  font-size: 0.875rem;
+  color: $gray-600;
+  background-color: $gray-50;
+
+  &:hover {
+    border-color: $primary-500;
+    color: $primary-600;
+    background-color: $primary-50;
+  }
+
+  svg {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+}
+
+.review-file-preview {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.5rem;
+}
+
+.review-file-item {
+  position: relative;
+  width: 5rem;
+  height: 5rem;
+  border-radius: $radius-md;
+  overflow: hidden;
+  border: 1px solid $gray-200;
+
+  img, .review-video-preview {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  button {
+    position: absolute;
+    top: 0.25rem;
+    right: 0.25rem;
+    width: 1.25rem;
+    height: 1.25rem;
+    background: rgba(0, 0, 0, 0.6);
+    border: none;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: $transition;
+
+    svg {
+      width: 0.75rem;
+      height: 0.75rem;
+      color: white;
+    }
+
+    &:hover {
+      background: rgba(0, 0, 0, 0.8);
+    }
+  }
+}

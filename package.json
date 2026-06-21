@@ -1,0 +1,16 @@
+{
+  "name": "web-store-portfolio",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "install:all": "npm ci --prefix client && npm ci --prefix server",
+    "build": "npm run build --prefix client",
+    "test": "npm test --prefix server",
+    "verify": "npm run test && npm run build && npm audit --omit=dev --prefix client && npm audit --omit=dev --prefix server",
+    "render:build": "npm run install:all && npm run prisma:generate --prefix server && npm run test && npm run build",
+    "render:start": "npm run prisma:deploy --prefix server && npm run prisma:seed --prefix server && npm start --prefix server"
+  },
+  "engines": {
+    "node": ">=22 <25"
+  }
+}

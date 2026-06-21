@@ -1,0 +1,142 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String?
+  firstName String?
+  lastName  String?
+  phone     String?
+  address   String?
+  city      String?
+  zipCode   String?
+  role      String   @default("user")
+  provider  String   @default("email")
+  providerId String?
+  orders    Order[]
+  cart      Cart?
+  reviews   Review[]
+  ownedProducts Product[] @relation("ProductOwner")
+  messages  Message[]
+  wishlist  Wishlist?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Product {
+  id          Int         @id @default(autoincrement())
+  ownerId     Int?
+  owner       User?       @relation("ProductOwner", fields: [ownerId], references: [id])
+  title       String
+  description String
+  price       Float
+  image       String
+  images      String?
+  colors      String?
+  category    String?
+  stock       Int         @default(0)
+  rating      Float       @default(0)
+  reviews     Int         @default(0)
+  orderItems  OrderItem[]
+  cartItems   CartItem[]
+  reviewList  Review[]
+  wishlists   WishlistProduct[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+model Order {
+  id        Int         @id @default(autoincrement())
+  userId    Int
+  user      User        @relation(fields: [userId], references: [id])
+  total     Float
+  status    String      @default("pending")
+  items     OrderItem[]
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+}
+
+model OrderItem {
+  id        Int     @id @default(autoincrement())
+  orderId   Int
+  order     Order   @relation(fields: [orderId], references: [id])
+  productId Int
+  product   Product @relation(fields: [productId], references: [id])
+  quantity  Int
+}
+
+model Cart {
+  id        Int         @id @default(autoincrement())
+  userId    Int         @unique
+  user      User        @relation(fields: [userId], references: [id])
+  items     CartItem[]
+  updatedAt DateTime    @updatedAt
+}
+
+model CartItem {
+  id        Int     @id @default(autoincrement())
+  cartId    Int
+  cart      Cart    @relation(fields: [cartId], references: [id])
+  productId Int
+  product   Product @relation(fields: [productId], references: [id])
+  quantity  Int
+  color     String?
+
+  @@unique([cartId, productId])
+}
+
+model Review {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  productId Int
+  product   Product  @relation(fields: [productId], references: [id])
+  rating    Int
+  comment   String?
+  images    String?
+  video     String?
+  reply     String?
+  replyCreatedAt DateTime?
+  replyUpdatedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, productId])
+}
+
+model Message {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  from      String   @default("WebStore")
+  subject   String
+  body      String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Wishlist {
+  id        Int              @id @default(autoincrement())
+  userId    Int              @unique
+  user      User             @relation(fields: [userId], references: [id])
+  products  WishlistProduct[]
+  updatedAt DateTime         @updatedAt
+}
+
+model WishlistProduct {
+  id         Int      @id @default(autoincrement())
+  wishlistId Int
+  wishlist   Wishlist @relation(fields: [wishlistId], references: [id])
+  productId  Int
+  product    Product  @relation(fields: [productId], references: [id])
+
+  @@unique([wishlistId, productId])
+}

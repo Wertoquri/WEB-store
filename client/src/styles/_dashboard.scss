@@ -1,0 +1,277 @@
+@use 'variables' as *;
+
+.dashboard-modal {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  padding: 1rem;
+  animation: fadeIn 0.2s ease;
+}
+
+.dashboard-modal-content {
+  background-color: $white;
+  border-radius: $radius-xl;
+  box-shadow: $shadow-2xl;
+  width: 100%;
+  max-width: 56rem;
+  height: 90vh;
+  display: flex;
+  overflow: hidden;
+  animation: scaleIn 0.3s ease;
+}
+
+.dashboard-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid $gray-100;
+
+  h2 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: $gray-900;
+  }
+
+  button {
+    padding: 0.375rem;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: $gray-400;
+    transition: $transition;
+    border-radius: $radius-md;
+
+    &:hover {
+      color: $gray-600;
+      background-color: $gray-100;
+    }
+  }
+}
+
+.dashboard-modal-body {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+.dashboard-sidebar {
+  width: 14rem;
+  border-right: 1px solid $gray-100;
+  padding: 1rem 0;
+  flex-shrink: 0;
+
+  button {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+    padding: 0.75rem 1.25rem;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 0.875rem;
+    color: $gray-600;
+    transition: $transition;
+    text-align: left;
+
+    &:hover {
+      background-color: $gray-50;
+      color: $primary-600;
+    }
+
+    &.active {
+      background-color: $primary-50;
+      color: $primary-700;
+      font-weight: 600;
+    }
+
+    svg {
+      width: 1.125rem;
+      height: 1.125rem;
+      flex-shrink: 0;
+    }
+  }
+}
+
+.dashboard-content {
+  flex: 1;
+  padding: 1.5rem;
+  overflow-y: auto;
+}
+
+.dashboard-stat-card {
+  @include card;
+  padding: 1.25rem;
+
+  h4 {
+    font-size: 0.8125rem;
+    color: $gray-500;
+    margin-bottom: 0.5rem;
+  }
+
+  .value {
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: $gray-900;
+  }
+
+  .change {
+    font-size: 0.75rem;
+    margin-top: 0.25rem;
+
+    &.positive {
+      color: $green-600;
+    }
+
+    &.negative {
+      color: $red-600;
+    }
+  }
+}
+
+.dashboard-orders-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.dashboard-order-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.875rem 1rem;
+  background-color: $white;
+  border: 1px solid $gray-100;
+  border-radius: $radius-lg;
+  transition: $transition;
+
+  &:hover {
+    border-color: $gray-200;
+    box-shadow: $shadow-sm;
+  }
+
+  .order-id {
+    font-weight: 600;
+    color: $gray-900;
+    font-size: 0.875rem;
+  }
+
+  .order-total {
+    font-weight: 700;
+    color: $gray-900;
+  }
+
+  .order-status {
+    padding: 0.25rem 0.625rem;
+    border-radius: $radius-full;
+    font-size: 0.6875rem;
+    font-weight: 600;
+
+    &.pending {
+      background-color: $yellow-100;
+      color: $yellow-700;
+    }
+
+    &.processing {
+      background-color: $blue-100;
+      color: $blue-700;
+    }
+
+    &.shipped {
+      background-color: $purple-100;
+      color: $purple-700;
+    }
+
+    &.delivered {
+      background-color: $green-100;
+      color: $green-700;
+    }
+
+    &.cancelled {
+      background-color: $red-100;
+      color: $red-700;
+    }
+  }
+}
+
+.dashboard-messages-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.dashboard-message-item {
+  padding: 0.875rem 1rem;
+  background-color: $white;
+  border: 1px solid $gray-100;
+  border-radius: $radius-lg;
+
+  .message-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.375rem;
+
+    .message-from {
+      font-weight: 600;
+      color: $gray-900;
+      font-size: 0.875rem;
+    }
+
+    .message-date {
+      font-size: 0.75rem;
+      color: $gray-400;
+    }
+  }
+
+  .message-text {
+    color: $gray-600;
+    font-size: 0.8125rem;
+    line-height: 1.5;
+  }
+}
+
+.dashboard-wallet-card {
+  @include card;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+
+  .wallet-balance {
+    font-size: 2rem;
+    font-weight: 800;
+    color: $gray-900;
+    margin-bottom: 0.25rem;
+  }
+
+  .wallet-label {
+    font-size: 0.875rem;
+    color: $gray-500;
+  }
+}
+
+.dashboard-compare-table {
+  width: 100%;
+  border-collapse: collapse;
+
+  th, td {
+    padding: 0.625rem 0.75rem;
+    text-align: left;
+    font-size: 0.8125rem;
+    border-bottom: 1px solid $gray-100;
+  }
+
+  th {
+    font-weight: 600;
+    color: $gray-500;
+    background-color: $gray-50;
+  }
+
+  td {
+    color: $gray-700;
+  }
+}

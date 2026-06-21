@@ -1,0 +1,3 @@
+ALTER TABLE "Review" ADD COLUMN "reply" TEXT;
+ALTER TABLE "Review" ADD COLUMN "replyCreatedAt" DATETIME;
+ALTER TABLE "Review" ADD COLUMN "replyUpdatedAt" DATETIME;
