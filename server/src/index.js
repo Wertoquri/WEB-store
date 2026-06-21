@@ -1,7 +1,6 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import helmet from 'helmet';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import authRoutes from './routes/auth.routes.js';
@@ -31,10 +30,6 @@ if (isProduction) {
 }
 
 // Security middleware
-app.use(helmet({
-  crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' },
-  contentSecurityPolicy: false,
-})); // CSP is configured below with the external services the storefront uses.
 app.use(securityHeaders); // Custom security headers
 
 // CORS configuration
