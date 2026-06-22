@@ -81,18 +81,18 @@ const CatalogFilters = ({
             Категорії
           </span>
         </div>
-        <div className={`grid gap-2 ${compact ? 'grid-cols-2' : 'grid-cols-1'}`}>
+        <div className={`grid gap-2 ${compact ? 'grid-cols-1 min-[380px]:grid-cols-2' : 'grid-cols-1'}`}>
           <button
             type="button"
             onClick={() => onCategoryChange(ALL_CATEGORY)}
-            className={`flex items-center justify-between rounded-lg border px-4 py-3 text-left text-sm transition ${
+            className={`flex min-w-0 items-center justify-between gap-2 rounded-lg border px-4 py-3 text-left text-sm transition ${
               selectedCategory === ALL_CATEGORY
                 ? 'border-[var(--brand)] bg-[var(--brand-soft)] text-[var(--ink-strong)] shadow-[var(--shadow-soft)]'
                 : 'border-[var(--line-soft)] bg-white/60 text-[var(--ink-soft)] hover:border-[var(--brand-soft)] hover:bg-white'
             }`}
           >
-            <span>Усі категорії</span>
-            <span className="text-[10px] uppercase tracking-[0.2em]">Store</span>
+            <span className="min-w-0 break-words">Усі категорії</span>
+            <span className={`${compact ? 'hidden' : ''} shrink-0 text-[10px] uppercase tracking-[0.2em]`}>Store</span>
           </button>
           {categoryDefinitions.map((category) => {
             const Icon = category.icon;
@@ -102,17 +102,17 @@ const CatalogFilters = ({
                 key={category.id}
                 type="button"
                 onClick={() => onCategoryChange(category.id)}
-                className={`flex items-center justify-between rounded-lg border px-4 py-3 text-left text-sm transition ${
+                className={`flex min-w-0 items-center justify-between gap-2 rounded-lg border px-4 py-3 text-left text-sm transition ${
                   selectedCategory === category.id
                     ? 'border-[var(--brand)] bg-[var(--brand-soft)] text-[var(--ink-strong)] shadow-[var(--shadow-soft)]'
                     : 'border-[var(--line-soft)] bg-white/60 text-[var(--ink-soft)] hover:border-[var(--brand-soft)] hover:bg-white'
                 }`}
               >
-                <span className="flex items-center gap-3">
-                  <Icon className="h-4 w-4" />
-                  {category.label}
+                <span className="flex min-w-0 items-center gap-2">
+                  <Icon className="h-4 w-4 shrink-0" />
+                  <span className="min-w-0 break-words leading-5">{category.label}</span>
                 </span>
-                <span className="text-[10px] uppercase tracking-[0.2em]">{category.dbValue}</span>
+                <span className={`${compact ? 'hidden' : ''} shrink-0 text-[10px] uppercase tracking-[0.2em]`}>{category.dbValue}</span>
               </button>
             );
           })}

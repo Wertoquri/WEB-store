@@ -24,6 +24,7 @@
   display: grid;
   grid-template-columns: 1fr;
   gap: 2rem;
+  min-width: 0;
 
   @media (min-width: 1024px) {
     grid-template-columns: 1fr 22rem;
@@ -33,6 +34,7 @@
 .checkout-form {
   @include card;
   padding: 2rem;
+  min-width: 0;
 }
 
 .checkout-form-title {
@@ -232,6 +234,62 @@
 
   &:hover {
     color: $primary-600;
+  }
+}
+
+@media (max-width: 639px) {
+  .checkout {
+    width: 100%;
+    max-width: 100%;
+    padding: 1.25rem 0.75rem 2rem;
+    overflow-x: clip;
+  }
+
+  .checkout-title {
+    margin-bottom: 1.25rem;
+    font-size: 1.5rem;
+    line-height: 1.15;
+  }
+
+  .checkout-grid {
+    gap: 1rem;
+  }
+
+  .checkout-form,
+  .checkout-summary {
+    width: 100%;
+    max-width: 100%;
+    padding: 1.25rem 1rem;
+    border-radius: 1rem;
+  }
+
+  .checkout-form-title {
+    font-size: 1.125rem;
+  }
+
+  .checkout-form-section-title {
+    align-items: flex-start;
+    line-height: 1.35;
+  }
+
+  .checkout-form-group,
+  .checkout-form-group input,
+  .checkout-form-group select {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .checkout-summary {
+    position: static;
+  }
+
+  .checkout-item {
+    display: grid;
+    grid-template-columns: 3rem minmax(0, 1fr) auto;
+  }
+
+  .checkout-item-price {
+    grid-column: 3;
   }
 }
 
