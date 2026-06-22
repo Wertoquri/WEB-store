@@ -93,6 +93,15 @@ const CatalogPage = () => {
   const [totalProducts, setTotalProducts] = useState(0);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
+  useEffect(() => {
+    if (!isFilterOpen) return undefined;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isFilterOpen]);
+
   const { isAuthenticated } = useAuth();
   const { addToCart } = useCart();
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
@@ -531,22 +540,22 @@ const CatalogPage = () => {
       <AnimatePresence>
         {isFilterOpen ? (
           <motion.div
-            className="fixed inset-0 z-[70] bg-black/45 px-4 py-6 lg:hidden"
+            className="fixed inset-0 z-[70] bg-black/45 px-3 py-3 sm:px-4 sm:py-6 lg:hidden"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setIsFilterOpen(false)}
           >
             <motion.div
-              className="mx-auto max-h-full w-full max-w-lg overflow-y-auto rounded-lg border border-white/30 bg-[var(--surface-elevated)] p-5 shadow-[0_32px_60px_-36px_rgba(19,28,45,0.8)]"
+              className="mx-auto max-h-[calc(100dvh-1.5rem)] w-full max-w-lg overscroll-contain overflow-x-hidden overflow-y-auto rounded-lg border border-white/30 bg-[var(--surface-elevated)] p-4 shadow-[0_32px_60px_-36px_rgba(19,28,45,0.8)] sm:max-h-[calc(100dvh-3rem)] sm:p-5"
               initial={{ y: 24, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: 16, opacity: 0 }}
               transition={{ duration: 0.24 }}
               onClick={(event) => event.stopPropagation()}
             >
-              <div className="mb-5 flex items-center justify-between gap-4">
-                <div>
+              <div className="mb-5 flex items-start justify-between gap-4">
+                <div className="min-w-0">
                   <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--ink-muted)]">
                     Мобільні фільтри
                   </p>
@@ -557,7 +566,8 @@ const CatalogPage = () => {
                 <button
                   type="button"
                   onClick={() => setIsFilterOpen(false)}
-                  className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[var(--line-soft)] bg-white"
+                  className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[var(--line-soft)] bg-white"
+                  aria-label="Закрити фільтри"
                 >
                   <X className="h-4 w-4" />
                 </button>
