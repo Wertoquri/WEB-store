@@ -1,13 +1,13 @@
 import prisma from '../db.js';
-import { deleteMedia, uploadMedia } from '../services/mediaStorage.js';
+import { deleteMedia, normalizeExternalMediaUrl, uploadMedia } from '../services/mediaStorage.js';
+import { syncProductReviewStats } from '../utils/productReviewStats.js';
 
 const reviewUserInclude = {
   user: {
     select: {
       id: true,
       firstName: true,
-      lastName: true,
-      email: true
+      lastName: true
     }
   }
 };
@@ -33,37 +33,71 @@ const parseJsonArray = (value) => {
   return [];
 };
 
+const parsePositiveInteger = (value) => {
+  const parsed = typeof value === 'number'
+    ? value
+    : typeof value === 'string' && /^\d+$/.test(value.trim())
+      ? Number(value.trim())
+      : Number.NaN;
+
+  return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : null;
+};
+
+const parseRating = (value) => {
+  const rating = parsePositiveInteger(value);
+  return rating && rating <= 5 ? rating : null;
+};
+
+const parseExternalMediaUrls = (value) => parseJsonArray(value)
+  .map((url) => normalizeExternalMediaUrl(url));
+
 const getUploadedReviewFiles = (req) => [
   ...(req.files?.images || []),
   ...(req.files?.video || [])
 ];
 
-const getStoredReviewMediaUrls = (review) => {
-  const storedImages = parseJsonArray(review.images);
-  const storedVideo = typeof review.video === 'string' ? review.video.trim() : '';
-  return [...storedImages, storedVideo].filter(Boolean);
-};
+const getStoredReviewMediaAssets = (review) => parseJsonArray(review.mediaAssets)
+  .filter((asset) => asset && typeof asset === 'object')
+  .map((asset) => ({
+    publicId: asset.publicId,
+    resourceType: asset.resourceType
+  }));
+
+const toStoredMediaAsset = (asset) => ({
+  publicId: asset.publicId,
+  resourceType: asset.resourceType
+});
+
+const userHasDeliveredProduct = (userId, productId) => prisma.orderItem.findFirst({
+  where: {
+    productId,
+    order: {
+      is: {
+        userId,
+        status: 'delivered'
+      }
+    }
+  },
+  select: { id: true }
+});
 
 const cleanupStoredReviewMedia = async (review) => {
-  await Promise.allSettled(getStoredReviewMediaUrls(review).map(deleteMedia));
+  await Promise.allSettled(getStoredReviewMediaAssets(review).map(deleteMedia));
 };
 
 export const createReview = async (req, res) => {
   const uploadedFiles = getUploadedReviewFiles(req);
   let reviewCreated = false;
+  let uploadedAssets = [];
 
   try {
     const userId = req.user.userId;
     const { productId, rating, comment, images, video } = req.body;
-    const productIdValue = Number.parseInt(productId, 10);
-    const ratingValue = Number.parseInt(rating, 10);
+    const productIdValue = parsePositiveInteger(productId);
+    const ratingValue = parseRating(rating);
 
     if (!productIdValue || !ratingValue) {
-      return res.status(400).json({ error: 'Product ID and rating are required' });
-    }
-
-    if (ratingValue < 1 || ratingValue > 5) {
-      return res.status(400).json({ error: 'Rating must be between 1 and 5' });
+      return res.status(400).json({ error: 'Product ID and a rating from 1 to 5 are required' });
     }
 
     const product = await prisma.product.findUnique({
@@ -87,41 +121,45 @@ export const createReview = async (req, res) => {
       return res.status(400).json({ error: 'You have already reviewed this product' });
     }
 
-    const uploadedImageUrls = await Promise.all(
+    const deliveredOrderItem = await userHasDeliveredProduct(userId, productIdValue);
+    if (!deliveredOrderItem) {
+      return res.status(403).json({ error: 'Only customers with a delivered order can review this product' });
+    }
+
+    const uploadedImageAssets = await Promise.all(
       (req.files?.images || []).map((file) => uploadMedia(file, 'webstore/reviews'))
     );
-    const uploadedVideoUrl = req.files?.video?.[0]
+    const uploadedVideoAsset = req.files?.video?.[0]
       ? await uploadMedia(req.files.video[0], 'webstore/reviews')
       : null;
-    const reviewImages = uploadedImageUrls.length > 0 ? uploadedImageUrls : parseJsonArray(images);
-    const reviewVideo = uploadedVideoUrl || (typeof video === 'string' && video.trim() ? video.trim() : null);
+    uploadedAssets = [...uploadedImageAssets, ...(uploadedVideoAsset ? [uploadedVideoAsset] : [])];
+    const reviewImages = uploadedImageAssets.length > 0
+      ? uploadedImageAssets.map((asset) => asset.secureUrl)
+      : parseExternalMediaUrls(images);
+    const reviewVideo = uploadedVideoAsset?.secureUrl || (
+      typeof video === 'string' && video.trim() ? normalizeExternalMediaUrl(video) : null
+    );
 
-    const review = await prisma.review.create({
-      data: {
-        userId,
-        productId: productIdValue,
-        rating: ratingValue,
-        comment: comment || null,
-        images: reviewImages.length > 0 ? JSON.stringify(reviewImages) : null,
-        video: reviewVideo
-      },
-      include: reviewUserInclude
+    const review = await prisma.$transaction(async (tx) => {
+      const createdReview = await tx.review.create({
+        data: {
+          userId,
+          productId: productIdValue,
+          rating: ratingValue,
+          comment: comment || null,
+          images: reviewImages.length > 0 ? JSON.stringify(reviewImages) : null,
+          video: reviewVideo,
+          mediaAssets: uploadedAssets.length > 0
+            ? JSON.stringify(uploadedAssets.map(toStoredMediaAsset))
+            : null
+        },
+        include: reviewUserInclude
+      });
+
+      await syncProductReviewStats(tx, productIdValue);
+      return createdReview;
     });
     reviewCreated = true;
-
-    const allReviews = await prisma.review.findMany({
-      where: { productId: productIdValue }
-    });
-
-    const avgRating = allReviews.reduce((sum, r) => sum + r.rating, 0) / allReviews.length;
-
-    await prisma.product.update({
-      where: { id: productIdValue },
-      data: {
-        rating: Math.round(avgRating * 10) / 10,
-        reviews: allReviews.length
-      }
-    });
 
     res.status(201).json({
       message: 'Review created successfully',
@@ -129,7 +167,10 @@ export const createReview = async (req, res) => {
     });
   } catch (error) {
     console.error('Create review error:', error.message);
-    if (!reviewCreated && uploadedFiles.length > 0) {
+    if (!reviewCreated && uploadedAssets.length > 0) {
+      await Promise.allSettled(uploadedAssets.map(deleteMedia));
+      console.warn('Review media was removed because the review could not be created.');
+    } else if (!reviewCreated && uploadedFiles.length > 0) {
       console.warn('Review media was not attached because the review could not be created.');
     }
     res.status(error.statusCode || 500).json({
@@ -156,27 +197,23 @@ export const updateReview = async (req, res) => {
       return res.status(403).json({ error: 'Access denied' });
     }
 
-    const updatedReview = await prisma.review.update({
-      where: { id: parseInt(id) },
-      data: {
-        rating: rating !== undefined ? rating : review.rating,
-        comment: comment !== undefined ? comment : review.comment
-      },
-      include: reviewUserInclude
-    });
+    const nextRating = rating === undefined ? review.rating : parseRating(rating);
+    if (!nextRating) {
+      return res.status(400).json({ error: 'Rating must be an integer between 1 and 5' });
+    }
 
-    const allReviews = await prisma.review.findMany({
-      where: { productId: review.productId }
-    });
+    const updatedReview = await prisma.$transaction(async (tx) => {
+      const nextReview = await tx.review.update({
+        where: { id: parseInt(id) },
+        data: {
+          rating: nextRating,
+          comment: comment !== undefined ? comment : review.comment
+        },
+        include: reviewUserInclude
+      });
 
-    const avgRating = allReviews.reduce((sum, r) => sum + r.rating, 0) / allReviews.length;
-
-    await prisma.product.update({
-      where: { id: review.productId },
-      data: {
-        rating: Math.round(avgRating * 10) / 10,
-        reviews: allReviews.length
-      }
+      await syncProductReviewStats(tx, review.productId);
+      return nextReview;
     });
 
     res.json({
@@ -185,7 +222,9 @@ export const updateReview = async (req, res) => {
     });
   } catch (error) {
     console.error('Update review error:', error);
-    res.status(500).json({ error: 'Failed to update review' });
+    res.status(error.statusCode || 500).json({
+      error: error.statusCode ? error.message : 'Failed to update review'
+    });
   }
 };
 
@@ -208,39 +247,21 @@ export const deleteReview = async (req, res) => {
 
     const productId = review.productId;
 
-    await prisma.review.delete({
-      where: { id: parseInt(id) }
+    await prisma.$transaction(async (tx) => {
+      await tx.review.delete({
+        where: { id: parseInt(id) }
+      });
+      await syncProductReviewStats(tx, productId);
     });
 
     await cleanupStoredReviewMedia(review);
 
-    const allReviews = await prisma.review.findMany({
-      where: { productId }
-    });
-
-    if (allReviews.length > 0) {
-      const avgRating = allReviews.reduce((sum, r) => sum + r.rating, 0) / allReviews.length;
-      await prisma.product.update({
-        where: { id: productId },
-        data: {
-          rating: Math.round(avgRating * 10) / 10,
-          reviews: allReviews.length
-        }
-      });
-    } else {
-      await prisma.product.update({
-        where: { id: productId },
-        data: {
-          rating: 0,
-          reviews: 0
-        }
-      });
-    }
-
     res.json({ message: 'Review deleted successfully' });
   } catch (error) {
     console.error('Delete review error:', error);
-    res.status(500).json({ error: 'Failed to delete review' });
+    res.status(error.statusCode || 500).json({
+      error: error.statusCode ? error.message : 'Failed to delete review'
+    });
   }
 };
 

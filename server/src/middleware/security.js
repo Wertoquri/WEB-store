@@ -2,12 +2,19 @@
 const failedAttempts = new Map();
 const MAX_ATTEMPTS = 5;
 const LOCKOUT_TIME = 15 * 60 * 1000; // 15 minutes
+const activeReviewUploads = new Map();
+const MAX_ACTIVE_REVIEW_UPLOADS = 4;
+const MAX_ACTIVE_REVIEW_UPLOADS_PER_ACCOUNT = 1;
+let activeReviewUploadCount = 0;
+
+const getLoginAttemptKey = (req) => {
+  const ip = req.ip || req.connection.remoteAddress;
+  return `${ip}_${normalizeEmail(req.body.email)}`;
+};
 
 // Rate limiting for login attempts
 export const loginRateLimiter = (req, res, next) => {
-  const ip = req.ip || req.connection.remoteAddress;
-  const email = req.body.email?.toLowerCase();
-  const key = `${ip}_${email}`;
+  const key = getLoginAttemptKey(req);
   
   const attempts = failedAttempts.get(key);
   
@@ -31,10 +38,8 @@ export const loginRateLimiter = (req, res, next) => {
   next();
 };
 
-export const recordFailedAttempt = (req, res, next) => {
-  const ip = req.ip || req.connection.remoteAddress;
-  const email = req.body.email?.toLowerCase();
-  const key = `${ip}_${email}`;
+export const recordFailedAttempt = (req) => {
+  const key = getLoginAttemptKey(req);
   
   const attempts = failedAttempts.get(key);
   
@@ -58,7 +63,6 @@ export const recordFailedAttempt = (req, res, next) => {
     }
   }
   
-  next();
 };
 
 export const clearFailedAttempts = (email) => {
@@ -68,6 +72,44 @@ export const clearFailedAttempts = (email) => {
       failedAttempts.delete(key);
     }
   }
+};
+
+// Bound concurrent streamed uploads globally and per authenticated account to
+// prevent one account from exhausting request slots or Cloudinary capacity.
+export const reviewUploadConcurrencyLimiter = (req, res, next) => {
+  const key = `user:${req.user?.userId || req.ip || req.connection.remoteAddress || 'unknown'}`;
+  const accountUploads = activeReviewUploads.get(key) || 0;
+
+  if (
+    activeReviewUploadCount >= MAX_ACTIVE_REVIEW_UPLOADS ||
+    accountUploads >= MAX_ACTIVE_REVIEW_UPLOADS_PER_ACCOUNT
+  ) {
+    return res.status(429).json({
+      error: 'Too many concurrent media uploads. Please wait for the current upload to finish.'
+    });
+  }
+
+  activeReviewUploadCount += 1;
+  activeReviewUploads.set(key, accountUploads + 1);
+  let released = false;
+
+  const release = () => {
+    if (released) {
+      return;
+    }
+    released = true;
+    activeReviewUploadCount = Math.max(0, activeReviewUploadCount - 1);
+    const remaining = (activeReviewUploads.get(key) || 1) - 1;
+    if (remaining > 0) {
+      activeReviewUploads.set(key, remaining);
+    } else {
+      activeReviewUploads.delete(key);
+    }
+  };
+
+  res.once('finish', release);
+  res.once('close', release);
+  next();
 };
 
 // Security headers middleware
@@ -95,6 +137,11 @@ export const sanitizeInput = (input) => {
     .replace(/[<>]/g, '') // Remove < and >
     .trim()
     .slice(0, 1000); // Limit length
+};
+
+export const normalizeEmail = (input) => {
+  const sanitized = sanitizeInput(input);
+  return typeof sanitized === 'string' ? sanitized.toLowerCase() : '';
 };
 
 // Validate email format

@@ -2,22 +2,48 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import prisma from '../db.js';
 import { OAuth2Client } from 'google-auth-library';
-import { sanitizeInput, isValidEmail, isStrongPassword, clearFailedAttempts } from '../middleware/security.js';
+import {
+  sanitizeInput,
+  normalizeEmail,
+  isValidEmail,
+  isStrongPassword,
+  clearFailedAttempts,
+  recordFailedAttempt
+} from '../middleware/security.js';
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 const BCRYPT_ROUNDS = 12; // Increased from default 10
+
+const signToken = (user) => jwt.sign(
+  {
+    userId: user.id,
+    email: user.email,
+    role: user.role,
+    tokenVersion: user.tokenVersion
+  },
+  process.env.JWT_SECRET,
+  { expiresIn: '7d' }
+);
+
+const serializeUser = (user) => ({
+  id: user.id,
+  email: user.email,
+  firstName: user.firstName,
+  lastName: user.lastName,
+  role: user.role
+});
 
 export const register = async (req, res) => {
   try {
     const { email, password, firstName, lastName } = req.body;
 
     // Validate input
-    if (!email || !password) {
+    if (typeof email !== 'string' || typeof password !== 'string' || !email || !password) {
       return res.status(400).json({ error: 'Email and password are required' });
     }
 
     // Sanitize inputs
-    const sanitizedEmail = sanitizeInput(email).toLowerCase();
+    const sanitizedEmail = normalizeEmail(email);
     const sanitizedName = sanitizeInput(firstName || '');
     const sanitizedLastName = sanitizeInput(lastName || '');
 
@@ -53,22 +79,12 @@ export const register = async (req, res) => {
       }
     });
 
-    const token = jwt.sign(
-      { userId: user.id, email: user.email, role: user.role },
-      process.env.JWT_SECRET,
-      { expiresIn: '7d' }
-    );
+    const token = signToken(user);
 
     res.status(201).json({
       message: 'User registered successfully',
       token,
-      user: {
-        id: user.id,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        role: user.role
-      }
+      user: serializeUser(user)
     });
   } catch (error) {
     console.error('Register error:', error);
@@ -80,46 +96,40 @@ export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    if (!email || !password) {
+    if (typeof email !== 'string' || typeof password !== 'string' || !email || !password) {
       return res.status(400).json({ error: 'Email and password are required' });
     }
 
     // Sanitize email
-    const sanitizedEmail = sanitizeInput(email).toLowerCase();
+    const sanitizedEmail = normalizeEmail(email);
 
     const user = await prisma.user.findUnique({
       where: { email: sanitizedEmail }
     });
 
     if (!user) {
+      recordFailedAttempt(req);
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    const isPasswordValid = await bcrypt.compare(password, user.password);
+    const isPasswordValid = user.password
+      ? await bcrypt.compare(password, user.password)
+      : false;
 
     if (!isPasswordValid) {
+      recordFailedAttempt(req);
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
     // Clear failed attempts on successful login
     clearFailedAttempts(user.email);
 
-    const token = jwt.sign(
-      { userId: user.id, email: user.email, role: user.role },
-      process.env.JWT_SECRET,
-      { expiresIn: '7d' }
-    );
+    const token = signToken(user);
 
     res.json({
       message: 'Login successful',
       token,
-      user: {
-        id: user.id,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        role: user.role
-      }
+      user: serializeUser(user)
     });
   } catch (error) {
     console.error('Login error:', error);
@@ -232,26 +242,16 @@ export const googleAuth = async (req, res) => {
           role: 'user'
         }
       });
-    } else if (user.provider !== 'google') {
+    } else if (user.provider !== 'google' || user.providerId !== googleId) {
       return res.status(400).json({ error: 'Email already registered with different provider' });
     }
 
-    const jwtToken = jwt.sign(
-      { userId: user.id, email: user.email, role: user.role },
-      process.env.JWT_SECRET,
-      { expiresIn: '7d' }
-    );
+    const jwtToken = signToken(user);
 
     res.json({
       message: 'Google authentication successful',
       token: jwtToken,
-      user: {
-        id: user.id,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        role: user.role
-      }
+      user: serializeUser(user)
     });
   } catch (error) {
     console.error('Google auth error:', error);
@@ -267,8 +267,45 @@ export const facebookAuth = async (req, res) => {
       return res.status(400).json({ error: 'Facebook access token is required' });
     }
 
+    const facebookAppId = process.env.FACEBOOK_APP_ID;
+    const facebookAppSecret = process.env.FACEBOOK_APP_SECRET;
+    if (
+      !facebookAppId ||
+      !facebookAppSecret ||
+      facebookAppId.startsWith('your-') ||
+      facebookAppSecret.startsWith('your-')
+    ) {
+      return res.status(503).json({ error: 'Facebook OAuth is not configured on the server' });
+    }
+
+    const debugQuery = new URLSearchParams({
+      input_token: accessToken,
+      access_token: `${facebookAppId}|${facebookAppSecret}`
+    });
+    const debugResponse = await fetch(
+      `https://graph.facebook.com/debug_token?${debugQuery.toString()}`
+    );
+
+    if (!debugResponse.ok) {
+      return res.status(401).json({ error: 'Invalid Facebook access token' });
+    }
+
+    const debugPayload = await debugResponse.json();
+    const debugData = debugPayload?.data;
+    if (
+      !debugData?.is_valid ||
+      String(debugData.app_id) !== String(facebookAppId) ||
+      !debugData.user_id
+    ) {
+      return res.status(401).json({ error: 'Invalid Facebook access token' });
+    }
+
+    const profileQuery = new URLSearchParams({
+      fields: 'id,name,email,first_name,last_name',
+      access_token: accessToken
+    });
     const facebookResponse = await fetch(
-      `https://graph.facebook.com/me?fields=id,name,email,first_name,last_name&access_token=${accessToken}`
+      `https://graph.facebook.com/me?${profileQuery.toString()}`
     );
 
     if (!facebookResponse.ok) {
@@ -277,6 +314,10 @@ export const facebookAuth = async (req, res) => {
 
     const facebookData = await facebookResponse.json();
     const { id: facebookId, email, first_name, last_name } = facebookData;
+
+    if (!email || String(facebookId) !== String(debugData.user_id)) {
+      return res.status(401).json({ error: 'Invalid Facebook account data' });
+    }
 
     let user = await prisma.user.findUnique({
       where: { email }
@@ -293,26 +334,16 @@ export const facebookAuth = async (req, res) => {
           role: 'user'
         }
       });
-    } else if (user.provider !== 'facebook') {
+    } else if (user.provider !== 'facebook' || user.providerId !== facebookId) {
       return res.status(400).json({ error: 'Email already registered with different provider' });
     }
 
-    const token = jwt.sign(
-      { userId: user.id, email: user.email, role: user.role },
-      process.env.JWT_SECRET,
-      { expiresIn: '7d' }
-    );
+    const token = signToken(user);
 
     res.json({
       message: 'Facebook authentication successful',
       token,
-      user: {
-        id: user.id,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        role: user.role
-      }
+      user: serializeUser(user)
     });
   } catch (error) {
     console.error('Facebook auth error:', error);
@@ -355,12 +386,21 @@ export const changePassword = async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(newPassword, BCRYPT_ROUNDS);
 
-    await prisma.user.update({
+    const updatedUser = await prisma.user.update({
       where: { id: userId },
-      data: { password: hashedPassword }
+      data: {
+        password: hashedPassword,
+        tokenVersion: { increment: 1 }
+      }
     });
 
-    res.json({ message: 'Password changed successfully' });
+    // The caller receives a new session; every previous JWT carries an older
+    // tokenVersion and is rejected by authMiddleware.
+    res.json({
+      message: 'Password changed successfully',
+      token: signToken(updatedUser),
+      user: serializeUser(updatedUser)
+    });
   } catch (error) {
     console.error('Change password error:', error);
     res.status(500).json({ error: 'Failed to change password' });

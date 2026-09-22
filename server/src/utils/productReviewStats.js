@@ -65,3 +65,27 @@ export const attachSingleProductReviewStats = async (product) => {
   const [normalizedProduct] = await attachProductReviewStats([product]);
   return normalizedProduct;
 };
+
+export const syncProductReviewStats = async (db, productId) => {
+  // Take the product-row lock before reading the aggregate. With PostgreSQL's
+  // read-committed isolation, this serializes concurrent review mutations for
+  // one product and prevents a stale aggregate from being written last.
+  await db.product.update({
+    where: { id: productId },
+    data: { reviews: { increment: 0 } },
+  });
+
+  const stats = await db.review.aggregate({
+    where: { productId },
+    _count: { _all: true },
+    _avg: { rating: true },
+  });
+
+  return db.product.update({
+    where: { id: productId },
+    data: {
+      rating: Math.round((stats._avg.rating || 0) * 10) / 10,
+      reviews: stats._count._all,
+    },
+  });
+};

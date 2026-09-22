@@ -1,40 +1,97 @@
 import prisma from '../db.js';
 
+const MAX_DATABASE_INTEGER = 2147483647;
+
+class CheckoutError extends Error {
+  constructor(statusCode, message) {
+    super(message);
+    this.statusCode = statusCode;
+  }
+}
+
+const parsePositiveDatabaseInteger = (value) => {
+  const parsed = typeof value === 'number'
+    ? value
+    : typeof value === 'string' && /^\d+$/.test(value.trim())
+      ? Number(value.trim())
+      : Number.NaN;
+
+  return Number.isSafeInteger(parsed) && parsed > 0 && parsed <= MAX_DATABASE_INTEGER
+    ? parsed
+    : null;
+};
+
+const normalizeOrderItems = (items) => {
+  if (!Array.isArray(items) || items.length === 0) {
+    throw new CheckoutError(400, 'Order items are required');
+  }
+
+  const quantitiesByProduct = new Map();
+  for (const item of items) {
+    const productId = parsePositiveDatabaseInteger(item?.productId);
+    const quantity = parsePositiveDatabaseInteger(item?.quantity);
+    if (!productId || !quantity) {
+      throw new CheckoutError(400, 'Each order item needs a positive integer product ID and quantity');
+    }
+
+    const combinedQuantity = (quantitiesByProduct.get(productId) || 0) + quantity;
+    if (combinedQuantity > MAX_DATABASE_INTEGER) {
+      throw new CheckoutError(400, 'Requested quantity is too large');
+    }
+    quantitiesByProduct.set(productId, combinedQuantity);
+  }
+
+  return [...quantitiesByProduct.entries()]
+    .map(([productId, quantity]) => ({ productId, quantity }))
+    .sort((left, right) => left.productId - right.productId);
+};
+
 export const createOrder = async (req, res) => {
   try {
     const userId = req.user.userId;
     const { items } = req.body;
+    const normalizedItems = normalizeOrderItems(items);
 
-    if (!items || items.length === 0) {
-      return res.status(400).json({ error: 'Order items are required' });
-    }
+    const order = await prisma.$transaction(async (tx) => {
+      let total = 0;
+      const orderItemsData = [];
 
-    let total = 0;
-    const orderItemsData = [];
+      for (const item of normalizedItems) {
+        const product = await tx.product.findUnique({
+          where: { id: item.productId }
+        });
 
-    for (const item of items) {
-      const product = await prisma.product.findUnique({
-        where: { id: item.productId }
-      });
+        if (!product) {
+          throw new CheckoutError(404, `Product ${item.productId} not found`);
+        }
 
-      if (!product) {
-        return res.status(404).json({ error: `Product ${item.productId} not found` });
-      }
+        // The conditional update makes the stock check and reservation one
+        // database operation, so duplicate lines and concurrent checkouts
+        // cannot oversell or increase inventory with a negative quantity.
+        const reservation = await tx.product.updateMany({
+          where: {
+            id: item.productId,
+            stock: { gte: item.quantity }
+          },
+          data: {
+            stock: { decrement: item.quantity }
+          }
+        });
 
-      if (product.stock < item.quantity) {
-        return res.status(400).json({ 
-          error: `Недостатньо товару "${product.title}" на складі. Доступно: ${product.stock} шт.` 
+        if (reservation.count !== 1) {
+          throw new CheckoutError(
+            400,
+            `Недостатньо товару "${product.title}" на складі. Доступно: ${product.stock} шт.`
+          );
+        }
+
+        total += product.price * item.quantity;
+        orderItemsData.push({
+          productId: item.productId,
+          quantity: item.quantity
         });
       }
 
-      total += product.price * item.quantity;
-      orderItemsData.push({
-        productId: item.productId,
-        quantity: item.quantity
-      });
-    }
-
-    const order = await prisma.$transaction(async (tx) => {
       const createdOrder = await tx.order.create({
         data: {
           userId,
@@ -51,17 +108,6 @@ export const createOrder = async (req, res) => {
           }
         }
       });
-
-      for (const item of items) {
-        await tx.product.update({
-          where: { id: item.productId },
-          data: {
-            stock: {
-              decrement: item.quantity
-            }
-          }
-        });
-      }
 
       await tx.cartItem.deleteMany({
         where: {
@@ -80,7 +126,9 @@ export const createOrder = async (req, res) => {
     });
   } catch (error) {
     console.error('Create order error:', error);
-    res.status(500).json({ error: 'Failed to create order' });
+    res.status(error.statusCode || 500).json({
+      error: error.statusCode ? error.message : 'Failed to create order'
+    });
   }
 };
 

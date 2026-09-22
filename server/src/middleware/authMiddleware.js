@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
+import prisma from '../db.js';
 
-export const authMiddleware = (req, res, next) => {
+export const authMiddleware = async (req, res, next) => {
   const authHeader = req.headers.authorization;
   
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -11,7 +12,21 @@ export const authMiddleware = (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded;
+    if (!Number.isSafeInteger(decoded.tokenVersion)) {
+      return res.status(401).json({ error: 'Invalid token.' });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+      select: { id: true, role: true, tokenVersion: true }
+    });
+
+    if (!user || user.tokenVersion !== decoded.tokenVersion) {
+      return res.status(401).json({ error: 'Invalid token.' });
+    }
+
+    // Read the role from the database so a role change takes effect straight away.
+    req.user = { ...decoded, role: user.role };
     next();
   } catch (error) {
     return res.status(401).json({ error: 'Invalid token.' });

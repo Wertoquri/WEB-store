@@ -117,8 +117,8 @@ app.use((err, req, res, next) => {
   console.error(err.stack);
 
   if (err.code === 'LIMIT_FILE_SIZE') {
-    return res.status(400).json({
-      error: 'Розмір медіафайлу перевищує 20 МБ.'
+    return res.status(413).json({
+      error: 'Розмір кожного медіафайлу не може перевищувати 5 МБ.'
     });
   }
 
@@ -128,10 +128,26 @@ app.use((err, req, res, next) => {
     });
   }
 
+  if (err.code === 'LIMIT_FIELD_VALUE') {
+    return res.status(413).json({
+      error: 'Текстове поле відгуку не може перевищувати 8 КБ.'
+    });
+  }
+
+  if (err.code === 'LIMIT_FIELD_COUNT' || err.code === 'LIMIT_PART_COUNT') {
+    return res.status(400).json({
+      error: 'Забагато полів у формі відгуку.'
+    });
+  }
+
   if (err.message === 'UNSUPPORTED_REVIEW_MEDIA_TYPE') {
     return res.status(400).json({
       error: 'Підтримуються зображення JPG, PNG, GIF, WEBP і відео MP4 або WEBM.'
     });
+  }
+
+  if (err.statusCode) {
+    return res.status(err.statusCode).json({ error: err.message });
   }
 
   res.status(500).json({ 

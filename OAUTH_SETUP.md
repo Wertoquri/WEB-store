@@ -58,6 +58,16 @@ GOOGLE_CLIENT_ID=your-google-client-id-here.apps.googleusercontent.com
 VITE_FACEBOOK_APP_ID=your-facebook-app-id-here
 ```
 
+**Server (.env):**
+```
+FACEBOOK_APP_ID=your-facebook-app-id-here
+FACEBOOK_APP_SECRET=your-facebook-app-secret
+```
+
+The server validates each submitted Facebook access token with Facebook's
+`debug_token` endpoint and rejects tokens issued for a different app. Both
+server values are therefore required in every deployed environment.
+
 ## Testing Without OAuth
 
 The application will still work with placeholder values, but OAuth login will fail. You can still use email/password registration and login.

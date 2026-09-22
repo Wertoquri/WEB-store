@@ -3,7 +3,11 @@ import {
   attachProductReviewStats,
   attachSingleProductReviewStats,
 } from '../utils/productReviewStats.js';
-import { deleteMedia, uploadMedia } from '../services/mediaStorage.js';
+import { deleteMedia, normalizeExternalMediaUrl, uploadMedia } from '../services/mediaStorage.js';
+
+const DEFAULT_PRODUCT_IMAGE = 'https://via.placeholder.com/300x300?text=No+Image';
+const MAX_CATALOG_LIMIT = 120;
+const MAX_CATALOG_PAGE = 1000;
 
 const normalizeString = (value) => {
   if (typeof value !== 'string') {
@@ -14,12 +18,43 @@ const normalizeString = (value) => {
   return trimmed.length > 0 ? trimmed : null;
 };
 
-const resolveProductImage = async (req, body, fallbackImage = null) => {
-  if (req.file) {
-    return uploadMedia(req.file, 'webstore/products');
+const parseBoundedPositiveInteger = (value, fallback, maximum) => {
+  if (value === undefined || value === null || value === '') {
+    return fallback;
   }
 
-  return body.imageUrl || body.image || fallbackImage || 'https://via.placeholder.com/300x300?text=No+Image';
+  const parsed = Number(value);
+  if (!Number.isSafeInteger(parsed) || parsed < 1) {
+    return fallback;
+  }
+
+  return Math.min(parsed, maximum);
+};
+
+const resolveProductImage = async (req, body, fallbackProduct = null) => {
+  if (req.file) {
+    const asset = await uploadMedia(req.file, 'webstore/products');
+    return {
+      image: asset.secureUrl,
+      imagePublicId: asset.publicId,
+      imageResourceType: asset.resourceType
+    };
+  }
+
+  const requestedImage = body.imageUrl ?? body.image;
+  if (requestedImage === undefined || requestedImage === null || requestedImage === '') {
+    return {
+      image: fallbackProduct?.image || DEFAULT_PRODUCT_IMAGE,
+      imagePublicId: fallbackProduct?.imagePublicId || null,
+      imageResourceType: fallbackProduct?.imageResourceType || null
+    };
+  }
+
+  return {
+    image: normalizeExternalMediaUrl(requestedImage),
+    imagePublicId: null,
+    imageResourceType: null
+  };
 };
 
 const canManageProduct = (product, user) => {
@@ -34,8 +69,8 @@ export const getAllProducts = async (req, res) => {
   try {
     const { page, limit, category, search, sort } = req.query;
 
-    const pageNum = parseInt(page) || 1;
-    const limitNum = parseInt(limit) || 100;
+    const pageNum = parseBoundedPositiveInteger(page, 1, MAX_CATALOG_PAGE);
+    const limitNum = parseBoundedPositiveInteger(limit, 100, MAX_CATALOG_LIMIT);
     const skip = (pageNum - 1) * limitNum;
 
     const where = {};
@@ -149,13 +184,14 @@ export const createProduct = async (req, res) => {
       return res.status(400).json({ error: 'Stock must be a non-negative integer' });
     }
 
+    const image = await resolveProductImage(req, req.body);
     const product = await prisma.product.create({
       data: {
         ownerId: req.user.userId,
         title: normalizedTitle,
         description: description || '',
         price: parsedPrice,
-        image: await resolveProductImage(req, req.body),
+        ...image,
         category: normalizeString(category),
         stock: parsedStock
       }
@@ -201,21 +237,28 @@ export const updateProduct = async (req, res) => {
       return res.status(400).json({ error: 'Stock must be a non-negative integer' });
     }
 
-    const nextImage = await resolveProductImage(req, req.body, existingProduct.image);
+    const nextImage = await resolveProductImage(req, req.body, existingProduct);
     const product = await prisma.product.update({
       where: { id: parseInt(id) },
       data: {
         title: normalizeString(title) || existingProduct.title,
         description: description !== undefined ? description : existingProduct.description,
         price: parsedPrice,
-        image: nextImage,
+        ...nextImage,
         category: category !== undefined ? normalizeString(category) : existingProduct.category,
         stock: parsedStock
       }
     });
 
-    if (nextImage !== existingProduct.image) {
-      await deleteMedia(existingProduct.image).catch((error) => {
+    if (
+      nextImage.image !== existingProduct.image ||
+      nextImage.imagePublicId !== existingProduct.imagePublicId ||
+      nextImage.imageResourceType !== existingProduct.imageResourceType
+    ) {
+      await deleteMedia({
+        publicId: existingProduct.imagePublicId,
+        resourceType: existingProduct.imageResourceType
+      }).catch((error) => {
         console.warn('Previous product image could not be removed:', error.message);
       });
     }
@@ -252,7 +295,10 @@ export const deleteProduct = async (req, res) => {
       where: { id: parseInt(id) }
     });
 
-    await deleteMedia(existingProduct.image).catch((error) => {
+    await deleteMedia({
+      publicId: existingProduct.imagePublicId,
+      resourceType: existingProduct.imageResourceType
+    }).catch((error) => {
       console.warn('Product image could not be removed:', error.message);
     });
 

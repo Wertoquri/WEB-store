@@ -23,5 +23,11 @@ services:
         value: 566283033694-2m7n5phsho0icok735g6jkgrbld19hhe.apps.googleusercontent.com
       - key: VITE_GOOGLE_CLIENT_ID
         value: 566283033694-2m7n5phsho0icok735g6jkgrbld19hhe.apps.googleusercontent.com
+      - key: FACEBOOK_APP_ID
+        sync: false
+      - key: FACEBOOK_APP_SECRET
+        sync: false
+      - key: VITE_FACEBOOK_APP_ID
+        sync: false
       - key: CLOUDINARY_URL
         sync: false

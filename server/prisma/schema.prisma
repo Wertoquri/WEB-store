@@ -20,6 +20,7 @@ model User {
   role      String   @default("user")
   provider  String   @default("email")
   providerId String?
+  tokenVersion Int @default(0)
   orders    Order[]
   cart      Cart?
   reviews   Review[]
@@ -38,6 +39,8 @@ model Product {
   description String
   price       Float
   image       String
+  imagePublicId String?
+  imageResourceType String?
   images      String?
   colors      String?
   category    String?
@@ -102,6 +105,7 @@ model Review {
   comment   String?
   images    String?
   video     String?
+  mediaAssets String?
   reply     String?
   replyCreatedAt DateTime?
   replyUpdatedAt DateTime?
@@ -109,6 +113,7 @@ model Review {
   updatedAt DateTime @updatedAt
 
   @@unique([userId, productId])
+  @@index([productId])
 }
 
 model Message {

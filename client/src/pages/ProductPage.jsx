@@ -101,7 +101,7 @@ const pageTransition = {
   exit: { opacity: 0, y: -12, transition: { duration: 0.2 } },
 };
 
-const MAX_REVIEW_VIDEO_SIZE = 20 * 1024 * 1024;
+const MAX_REVIEW_MEDIA_SIZE = 5 * 1024 * 1024;
 const reviewComposerClass =
   'mt-8 rounded-lg border border-[var(--line-soft)] bg-white/80 p-5';
 const reviewUploadTriggerClass =
@@ -110,6 +110,19 @@ const reviewPreviewCardClass =
   'relative overflow-hidden rounded-lg border border-[var(--line-soft)]';
 const reviewPreviewRemoveButtonClass =
   'absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-full bg-black/50 text-white';
+
+const safeExternalMediaUrl = (value) => {
+  if (typeof value !== 'string') {
+    return null;
+  }
+
+  try {
+    const url = new URL(value);
+    return url.protocol === 'https:' ? url.toString() : null;
+  } catch {
+    return null;
+  }
+};
 
 const ProductPage = () => {
   const { id } = useParams();
@@ -316,7 +329,14 @@ const ProductPage = () => {
       return;
     }
 
-    const newFiles = selectedFiles.map((file) => ({
+    const acceptedFiles = selectedFiles.filter((file) => file.size <= MAX_REVIEW_MEDIA_SIZE);
+    if (acceptedFiles.length !== selectedFiles.length) {
+      const message = 'Кожен файл для відгуку має бути не більше 5 МБ.';
+      setReviewError(message);
+      toast.error(message);
+    }
+
+    const newFiles = acceptedFiles.map((file) => ({
       file,
       preview: URL.createObjectURL(file),
     }));
@@ -345,8 +365,8 @@ const ProductPage = () => {
       return;
     }
 
-    if (nextVideo.size > MAX_REVIEW_VIDEO_SIZE) {
-      const message = 'Відео для відгуку має бути не більше 20 МБ.';
+    if (nextVideo.size > MAX_REVIEW_MEDIA_SIZE) {
+      const message = 'Відео для відгуку має бути не більше 5 МБ.';
 
       setReviewError(message);
       toast.error(message);
@@ -692,7 +712,7 @@ const ProductPage = () => {
                 </label>
               </div>
               <p className="mt-3 text-xs leading-6 text-[var(--ink-muted)]">
-                До 5 фото та 1 відео. Для коректного відтворення підтримуються MP4 або WEBM, максимум 20 МБ.
+                До 5 фото та 1 відео. Кожен файл — максимум 5 МБ; для відео підтримуються MP4 або WEBM.
               </p>
 
               {reviewFiles.length > 0 ? (
@@ -757,13 +777,20 @@ const ProductPage = () => {
           {!reviewsLoading && reviews.length > 0 ? (
             <div className="mt-8 grid gap-5">
               {reviews.map((review) => {
-                const reviewImages = review.images ? (() => {
+                const parsedReviewImages = review.images ? (() => {
                   try {
                     return JSON.parse(review.images);
                   } catch {
                     return [];
                   }
                 })() : [];
+                const reviewImages = (Array.isArray(parsedReviewImages) ? parsedReviewImages : [])
+                  .map(safeExternalMediaUrl)
+                  .filter(Boolean);
+                const reviewVideo = safeExternalMediaUrl(review.video);
+                const reviewerName = [review.user?.firstName, review.user?.lastName]
+                  .filter(Boolean)
+                  .join(' ') || 'Покупець';
 
                 const isOwner = user && review.userId === user.id;
                 const hasReply = Boolean(review.reply?.trim());
@@ -775,10 +802,10 @@ const ProductPage = () => {
                     <div className="flex flex-wrap items-start justify-between gap-4">
                       <div className="flex items-center gap-4">
                         <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-[var(--brand-soft)] text-sm font-semibold text-[var(--brand)]">
-                          {review.user.firstName?.[0] || review.user.email[0]}
+                          {reviewerName[0]}
                         </span>
                         <div>
-                          <p className="font-medium text-[var(--ink-strong)]">{review.user.firstName || review.user.email}</p>
+                          <p className="font-medium text-[var(--ink-strong)]">{reviewerName}</p>
                           <p className="text-xs uppercase tracking-[0.18em] text-[var(--ink-muted)]">
                             {new Date(review.createdAt).toLocaleDateString('uk-UA')}
                           </p>
@@ -819,10 +846,10 @@ const ProductPage = () => {
                       </div>
                     ) : null}
 
-                    {review.video ? (
+                    {reviewVideo ? (
                       <div className="mt-5 overflow-hidden rounded-lg border border-[var(--line-soft)]">
                         <video
-                          src={review.video}
+                          src={reviewVideo}
                           controls
                           playsInline
                           preload="metadata"

@@ -102,7 +102,7 @@ const PasswordField = ({
 );
 
 const ProfilePage = () => {
-  const { user, updateUserData } = useAuth();
+  const { user, updateUserData, login } = useAuth();
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -205,10 +205,12 @@ const ProfilePage = () => {
     setPasswordLoading(true);
 
     try {
-      await authAPI.changePassword({
+      const response = await authAPI.changePassword({
         currentPassword: passwordData.currentPassword,
         newPassword: passwordData.newPassword,
       });
+
+      login(response.data.user, response.data.token);
 
       setPasswordSuccess('Пароль успішно змінено.');
       setPasswordError('');
